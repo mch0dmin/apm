@@ -19,12 +19,46 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+
+char *bbs_name = NULL;
+char *username = NULL;
+char *passwd = NULL;
+char *email = NULL;
+char *detail = NULL;
+
+void split_arg_of_i(char *arg)
+{
+	char *split = NULL;	
+	int i = 0;
+	split = strsep(&arg, "?");
+	bbs_name = split;
+	while(split != NULL) {
+		printf("i = %d\n", i);
+		if(i == 1) {
+			username = split;
+		} else if(i == 2) {
+			passwd = split;	
+		} else if(i == 3) {
+			email = split;
+		} else if(i == 4) {
+			detail = split;
+		}
+		printf("split = %s\n", split);
+		split = strsep(&arg, "?");	
+		i ++;
+	}
+	
+	printf("bbs_name:%s\nusername:%s\npasswd:%s\nemail:%s\ndetail:%s\n", 	\
+			bbs_name, username, passwd, email, detail);
+
+}
 
 void print_usage()
 {
 	printf("\e[31m*************************************** \e[0m\n");
 	printf("Usage:\n");
-	printf("apm -l | -s bbs_name | -d bbs_name | -i | -h\n");
+	printf("apm -l | -s bbs_name | -d bbs_name | -i bbs_name?username?passwd?email?detail | -h\n");
 	printf("----------\n");
 	printf("-l: list all option names.\n");
 	printf("----------\n");
@@ -47,7 +81,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	while((ch = getopt(argc, argv, "ls:d:ih")) != -1) {
+	while((ch = getopt(argc, argv, "ls:d:i:h")) != -1) {
 		printf("optind: %d\n", optind);
 
 		switch(ch) {
@@ -64,6 +98,8 @@ int main(int argc, char **argv)
 				break;
 			case 'i':
 				printf("Have option: -i\n\n");
+				printf("The argument of -i is %s\n\n", optarg);
+				split_arg_of_i(optarg);
 				break;
 			case 'h':
 				printf("Have option: -h\n\n");
