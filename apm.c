@@ -38,7 +38,7 @@ void delete_one_info_by_bbsname(char *m_bbs_name)
 	int ret;
 	char sql[100] = {0};
 	sprintf(sql, "delete from uandp where bbs_name = '%s';", m_bbs_name);
-	printf("%s: sql = %s\n", __FUNCTION__, sql);
+	//printf("%s: sql = %s\n", __FUNCTION__, sql);
 
 	ret = sqlite3_prepare(db, sql, -1, &stmt, &zTail);
 	if(ret != SQLITE_OK) {
@@ -67,26 +67,23 @@ void select_info_by_bbsname(char *m_bbs_name)
 {
 	int ret;
 	char **dbResult = NULL;
-	//char *sql = "select * from uandp where bbs_name = ?;"; 
-	//char *sql = "select * from uandp where bbs_name = "; 
 	char sql[100] = { 0 };
 	//sprintf(sql, "\'%s\'\;", m_bbs_name);
 	sprintf(sql, "select * from uandp where bbs_name = '%s';", m_bbs_name);
-	printf("sql = %s\n", sql);
+	//printf("sql = %s\n", sql);
 	int nrow, ncolumn;
 	int index;
 	char *zErrMsg = NULL;
 
 	sqlite3_prepare(db, sql, -1, &stmt, &zTail);
-	printf("%s: %s\n", __FUNCTION__, m_bbs_name);
+	//printf("%s: %s\n", __FUNCTION__, m_bbs_name);
 	ret = sqlite3_bind_text(stmt, 1, m_bbs_name, -1, SQLITE_STATIC);
-	printf("%s: ret = %d\n", __FUNCTION__, ret);
+	//printf("%s: ret = %d\n", __FUNCTION__, ret);
 
-	char *sql1 = "select * from uandp where bbs_name = 'heike';"; 
 	ret = sqlite3_get_table(db, sql, &dbResult, &nrow, &ncolumn, &zErrMsg);
 
-	printf("%s: nrow = %d, ncolumn = %d\n", __FUNCTION__, nrow, ncolumn);
-	printf("all bbs_name list is:\n");
+	//printf("%s: nrow = %d, ncolumn = %d\n", __FUNCTION__, nrow, ncolumn);
+	printf("The info of %s is:\n", m_bbs_name);
 	index = ncolumn;
 	if(ret == SQLITE_OK) {
 		//for(int i = 0; i < nrow; i ++) {
@@ -118,8 +115,8 @@ void select_bbs_name()
 	int ncolumn = 0;
 
 	sqlite3_get_table(db, sql, &azResult, &nrow, &ncolumn, &zErrMsg);
-	printf("nrow=%d ncolumn=%d\n",nrow,ncolumn);
-	printf("the result is:\n");
+	//printf("nrow=%d ncolumn=%d\n",nrow,ncolumn);
+	printf("\e[32m all bbs_name list is:\e[0m\n");
 	//for(int i=0;i<(nrow+1)*ncolumn;i++)
 	for(int i = 0; i < nrow; i ++)
 	{
@@ -186,6 +183,9 @@ void insert(char *bbs_name, char *username, char *passwd, char *email, char *det
 		sqlite3_free(zTail);
 		sqlite3_close(db);
 		exit(1);
+	} else {
+		printf("\e[32m insert into %s's info successfully!\n - bbs_name:%s\n - username:%s\n - passwd:%s\n - email:%s\n - detail:%s \e[0m\n", 	\
+				bbs_name, bbs_name, username, passwd, email, detail);
 	}
 
 	//ret = sqlite3_exec(db, sql, NULL, NULL, &zErrMsg);
@@ -203,7 +203,7 @@ void split_arg_of_i(char *arg)
 	split = strsep(&arg, "?");
 	bbs_name = split;
 	while(split != NULL) {
-		printf("i = %d\n", i);
+		//printf("i = %d\n", i);
 		if(i == 1) {
 			username = split;
 		} else if(i == 2) {
@@ -213,12 +213,12 @@ void split_arg_of_i(char *arg)
 		} else if(i == 4) {
 			detail = split;
 		}
-		printf("split = %s\n", split);
+		//printf("split = %s\n", split);
 		split = strsep(&arg, "?");	
 		i ++;
 	}
 
-	printf("bbs_name:%s\nusername:%s\npasswd:%s\nemail:%s\ndetail:%s\n", 	\
+	//printf("bbs_name:%s\nusername:%s\npasswd:%s\nemail:%s\ndetail:%s\n", 	\
 			bbs_name, username, passwd, email, detail);
 
 	insert(bbs_name, username, passwd, email, detail);
@@ -248,46 +248,46 @@ int main(int argc, char **argv)
 	int ch;
 	int ret;
 
-	if(argc < 2) {
+	if(argc < 2){
 		print_usage();
 		exit(1);
 	} else {
 		ret = sqlite3_open("apm.db", &db);
-		printf("%s: ret = %d\n", __FUNCTION__, ret);
+		//printf("%s: ret = %d\n", __FUNCTION__, ret);
 		if(ret != SQLITE_OK) {
 			fprintf(stderr, "Can't open database:%s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
 			exit(1);
 		} else {
-			printf("You have opened a sqlite3 database named apm.db successfully!\n");
+			//printf("\e[32m You have opened a sqlite3 database named apm.db successfully!\e[0m\n");
 		}
 	}
 
 	while((ch = getopt(argc, argv, "ls:d:i:h")) != -1) {
-		printf("optind: %d\n", optind);
+		//printf("optind: %d\n", optind);
 
 		switch(ch) {
 			case 'l':
-				printf("Have option: -a\n\n");
+				//printf("Have option: -a\n\n");
 				select_bbs_name();
 				break;
 			case 's':
-				printf("Have option: -s\n");
-				printf("The argument of -s is %s\n\n", optarg);
+				//printf("Have option: -s\n");
+				//printf("The argument of -s is %s\n\n", optarg);
 				select_info_by_bbsname(optarg);
 				break;
 			case 'd':
-				printf("Have option: -d\n\n");
-				printf("The argument of -d is %s\n\n", optarg);
+				//printf("Have option: -d\n\n");
+				//printf("The argument of -d is %s\n\n", optarg);
 				delete_one_info_by_bbsname(optarg);
 				break;
 			case 'i':
-				printf("Have option: -i\n\n");
-				printf("The argument of -i is %s\n\n", optarg);
+				//printf("Have option: -i\n\n");
+				//printf("The argument of -i is %s\n\n", optarg);
 				split_arg_of_i(optarg);
 				break;
 			case 'h':
-				printf("Have option: -h\n\n");
+				//printf("Have option: -h\n\n");
 				print_usage();
 				break;
 			default:
