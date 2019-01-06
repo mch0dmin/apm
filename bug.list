@@ -16,4 +16,10 @@ $ ./apm -l
  - bbs_name
  - tieba
 	表中的第一行数据查询不出来；
+
+	2019年1月6日 22:35:38
+	改正了第一个bug：
+	在序号上进行了+1操作；
+	select_bbs_name()中：
+	printf("- %s\n", azResult[i+1]);
 2、没有修改的功能；
