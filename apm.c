@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  main.c
+ *       Filename:  
  *
  *    Description:  
  *
@@ -30,11 +30,108 @@ char *detail = NULL;
 
 sqlite3 *db = NULL;
 char *zErrMsg = NULL;
+sqlite3_stmt *stmt = NULL;
+const char *zTail = NULL;
+
+void select_info_by_bbsname(char *m_bbs_name)
+{
+	printf("----------------0\n");
+	int ret;
+	char **dbResult = NULL;
+	//char *sql = "select * from uandp where bbs_name = ?;"; 
+	//char *sql = "select * from uandp where bbs_name = "; 
+	char sql[100] = { 0 };
+	printf("----------------1\n");
+	//sprintf(sql, "\'%s\'\;", m_bbs_name);
+	sprintf(sql, "select * from uandp where bbs_name = '%s';", m_bbs_name);
+	printf("----------------2\n");
+	printf("sql = %s\n", sql);
+	printf("----------------3\n");
+	int nrow, ncolumn;
+	int index;
+	char *zErrMsg = NULL;
+
+	sqlite3_prepare(db, sql, -1, &stmt, &zTail);
+	printf("%s: %s\n", __FUNCTION__, m_bbs_name);
+	ret = sqlite3_bind_text(stmt, 1, m_bbs_name, -1, SQLITE_STATIC);
+	printf("%s: ret = %d\n", __FUNCTION__, ret);
+
+	char *sql1 = "select * from uandp where bbs_name = 'heike';"; 
+	ret = sqlite3_get_table(db, sql, &dbResult, &nrow, &ncolumn, &zErrMsg);
+
+	printf("%s: nrow = %d, ncolumn = %d\n", __FUNCTION__, nrow, ncolumn);
+	printf("the result is:\n");
+	index = ncolumn;
+	if(ret == SQLITE_OK) {
+		//for(int i = 0; i < nrow; i ++) {
+			for(int j = 0; j < ncolumn; j ++) {
+				//printf("%s --> %s\n", dbResult[i], dbResult[index]);
+				printf("--> %s\n", dbResult[index]);
+				++index;
+			}
+		//}
+	}
+
+	//	for(int i = 0; i < ncolumn; i ++) {
+	//		printf("- %s\n", azResult[i]);
+	//	}
+	//sqlite3_free(stmt);
+	sqlite3_finalize(stmt);
+	sqlite3_free(zErrMsg);
+}
+
+void select_bbs_name()
+{
+	int ret;	
+	char *m_bbs_name;
+
+	char *sql = "select bbs_name from uandp;";
+
+	char **azResult = NULL;
+	int nrow = 0;
+	int ncolumn = 0;
+
+	sqlite3_get_table(db, sql, &azResult, &nrow, &ncolumn, &zErrMsg);
+	printf("nrow=%d ncolumn=%d\n",nrow,ncolumn);
+	printf("the result is:\n");
+	//for(int i=0;i<(nrow+1)*ncolumn;i++)
+	for(int i = 0; i < nrow; i ++)
+	{
+		//printf("azResult[%d]=%s\n",i,azResult[i]);
+		printf("- %s\n", azResult[i]);
+	}
+	//sqlite3_free(azResult);
+	sqlite3_free(zErrMsg);
+	sqlite3_close(db);
+
+#if 0
+	ret = sqlite3_prepare(db, sql, -1, &stmt, &zTail);
+	if(ret != SQLITE_OK) {
+		printf("\e[31m %s: prepare error!\e[0m\n", __FUNCTION__);
+		sqlite3_free(stmt);
+		sqlite3_free(zTail);
+		sqlite3_close(db);
+		exit(1);
+	}
+
+	ret = sqlite3_step(stmt);
+	printf("%s: ret = %d\n", __FUNCTION__, ret);
+	while(ret == SQLITE_ROW) {
+		m_bbs_name = sqlite3_column_text(stmt, 1);
+		printf("- %s\n", m_bbs_name);
+		ret = sqlite3_step(stmt);
+	}
+	sqlite3_finalize(stmt);
+	sqlite3_free(stmt);
+	sqlite3_free(zTail);
+	sqlite3_close(db);
+#endif
+}
 
 void insert(char *bbs_name, char *username, char *passwd, char *email, char *detail)
 {
-	int ret = 0;
-	sqlite3_stmt * stmt = NULL;
+	int ret;
+	sqlite3_stmt *stmt = NULL;
 	const char *zTail = NULL;
 	//char *sql = "insert into uandp(bbs_name, username, passwd, email, detail) values(bbs_name, username, passwd, email, detail)";
 
@@ -45,6 +142,7 @@ void insert(char *bbs_name, char *username, char *passwd, char *email, char *det
 		printf("\e[31m %s:prepare error!\e[0m\n", __FUNCTION__);
 		sqlite3_free(stmt);
 		sqlite3_free(zTail);
+		sqlite3_close(db);
 		exit(1);
 	}
 
@@ -60,6 +158,7 @@ void insert(char *bbs_name, char *username, char *passwd, char *email, char *det
 		printf("\e[31m %s: %s!\e[0m\n", __FUNCTION__, sqlite3_errmsg(db));
 		sqlite3_free(stmt);
 		sqlite3_free(zTail);
+		sqlite3_close(db);
 		exit(1);
 	}
 
@@ -128,7 +227,7 @@ int main(int argc, char **argv)
 		exit(1);
 	} else {
 		ret = sqlite3_open("apm.db", &db);
-		printf("ret = %d\n", ret);
+		printf("%s: ret = %d\n", __FUNCTION__, ret);
 		if(ret != SQLITE_OK) {
 			fprintf(stderr, "Can't open database:%s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -144,10 +243,12 @@ int main(int argc, char **argv)
 		switch(ch) {
 			case 'l':
 				printf("Have option: -a\n\n");
+				select_bbs_name();
 				break;
 			case 's':
 				printf("Have option: -s\n");
 				printf("The argument of -s is %s\n\n", optarg);
+				select_info_by_bbsname(optarg);
 				break;
 			case 'd':
 				printf("Have option: -d\n\n");
