@@ -121,7 +121,7 @@ void select_bbs_name()
 	for(int i = 0; i < nrow; i ++)
 	{
 		//printf("azResult[%d]=%s\n",i,azResult[i]);
-		printf("- %s\n", azResult[i]);
+		printf("- %s\n", azResult[i+1]);
 	}
 	//sqlite3_free(azResult);
 	sqlite3_free(zErrMsg);
