@@ -33,20 +33,46 @@ char *zErrMsg = NULL;
 sqlite3_stmt *stmt = NULL;
 const char *zTail = NULL;
 
+void delete_one_info_by_bbsname(char *m_bbs_name)
+{
+	int ret;
+	char sql[100] = {0};
+	sprintf(sql, "delete from uandp where bbs_name = '%s';", m_bbs_name);
+	printf("%s: sql = %s\n", __FUNCTION__, sql);
+
+	ret = sqlite3_prepare(db, sql, -1, &stmt, &zTail);
+	if(ret != SQLITE_OK) {
+		printf("\e[31m %s: %s \e[0m\n", __FUNCTION__, sqlite3_errmsg(db));
+		sqlite3_free(stmt);
+		sqlite3_free(zTail);
+		sqlite3_close(db);
+		exit(1);
+	}
+	ret = sqlite3_step(stmt);
+	if(ret != SQLITE_DONE) {
+		printf("\e[31m %s: %s \e[0m\n", __FUNCTION__, sqlite3_errmsg(db));
+		sqlite3_free(stmt);
+		sqlite3_free(zTail);
+		sqlite3_close(db);
+		exit(1);
+	} else {
+		printf("\e[32m delete %s's info successfully!\e[0m\n", m_bbs_name);
+	}
+	//sqlite3_free(stmt);
+	//sqlite3_free(zTail);
+	sqlite3_close(db);
+}
+
 void select_info_by_bbsname(char *m_bbs_name)
 {
-	printf("----------------0\n");
 	int ret;
 	char **dbResult = NULL;
 	//char *sql = "select * from uandp where bbs_name = ?;"; 
 	//char *sql = "select * from uandp where bbs_name = "; 
 	char sql[100] = { 0 };
-	printf("----------------1\n");
 	//sprintf(sql, "\'%s\'\;", m_bbs_name);
 	sprintf(sql, "select * from uandp where bbs_name = '%s';", m_bbs_name);
-	printf("----------------2\n");
 	printf("sql = %s\n", sql);
-	printf("----------------3\n");
 	int nrow, ncolumn;
 	int index;
 	char *zErrMsg = NULL;
@@ -60,7 +86,7 @@ void select_info_by_bbsname(char *m_bbs_name)
 	ret = sqlite3_get_table(db, sql, &dbResult, &nrow, &ncolumn, &zErrMsg);
 
 	printf("%s: nrow = %d, ncolumn = %d\n", __FUNCTION__, nrow, ncolumn);
-	printf("the result is:\n");
+	printf("all bbs_name list is:\n");
 	index = ncolumn;
 	if(ret == SQLITE_OK) {
 		//for(int i = 0; i < nrow; i ++) {
@@ -253,6 +279,7 @@ int main(int argc, char **argv)
 			case 'd':
 				printf("Have option: -d\n\n");
 				printf("The argument of -d is %s\n\n", optarg);
+				delete_one_info_by_bbsname(optarg);
 				break;
 			case 'i':
 				printf("Have option: -i\n\n");
