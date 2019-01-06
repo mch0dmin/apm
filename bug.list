@@ -23,3 +23,4 @@ $ ./apm -l
 	select_bbs_name()中：
 	printf("- %s\n", azResult[i+1]);
 2、没有修改的功能；
+3、实现脚本安装配置程序的功能；
