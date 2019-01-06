@@ -1,0 +1,19 @@
+
+2019年1月6日 22:25:34
+完成了一个出版，
+还有两个Bug需要修改：
+1、-l查询的时候，
+第一列的值显示错误，
+一直显示的是bbs_name，
+头两列显示的是bbs_name；
+数据库查询的：
+sqlite> select * from uandp;   
+zhihu|0dmin|mch0dm1n|mch0dmin@163.com|wodezhihu
+tieba|0dmin|mch0dm1n|mch0dmin@163.com|贴吧账号
+程序查询的：
+$ ./apm -l
+ all bbs_name list is:
+ - bbs_name
+ - tieba
+	表中的第一行数据查询不出来；
+2、没有修改的功能；
