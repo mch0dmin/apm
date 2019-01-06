@@ -20,12 +20,56 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include "sqlite3.h"
 
 char *bbs_name = NULL;
 char *username = NULL;
 char *passwd = NULL;
 char *email = NULL;
 char *detail = NULL;
+
+sqlite3 *db = NULL;
+char *zErrMsg = NULL;
+
+void insert(char *bbs_name, char *username, char *passwd, char *email, char *detail)
+{
+	int ret = 0;
+	sqlite3_stmt * stmt = NULL;
+	const char *zTail = NULL;
+	//char *sql = "insert into uandp(bbs_name, username, passwd, email, detail) values(bbs_name, username, passwd, email, detail)";
+
+	char *sql = "insert into uandp(bbs_name, username, passwd, email, detail) 	\
+				 values(?, ?, ?, ?, ?);";
+	ret = sqlite3_prepare(db, sql, -1, &stmt, &zTail);
+	if(ret != SQLITE_OK) {
+		printf("\e[31m %s:prepare error!\e[0m\n", __FUNCTION__);
+		sqlite3_free(stmt);
+		sqlite3_free(zTail);
+		exit(1);
+	}
+
+	sqlite3_bind_text(stmt, 1, bbs_name, -1, SQLITE_STATIC);
+	sqlite3_bind_text(stmt, 2, username, -1, SQLITE_STATIC);
+	sqlite3_bind_text(stmt, 3, passwd, -1, SQLITE_STATIC);
+	sqlite3_bind_text(stmt, 4, email, -1, SQLITE_STATIC);
+	sqlite3_bind_text(stmt, 5, detail, -1, SQLITE_STATIC);
+
+	ret = sqlite3_step(stmt);
+	if(ret != SQLITE_DONE) {
+		//printf("%s:step done!\n", __FUNCTION__);
+		printf("\e[31m %s: %s!\e[0m\n", __FUNCTION__, sqlite3_errmsg(db));
+		sqlite3_free(stmt);
+		sqlite3_free(zTail);
+		exit(1);
+	}
+
+	//ret = sqlite3_exec(db, sql, NULL, NULL, &zErrMsg);
+	//if(ret != SQLITE_OK) {
+	//	printf("SQL error: %s\n", zErrMsg);
+	//	sqlite3_free(zErrMsg);
+	//}
+	sqlite3_close(db);
+}
 
 void split_arg_of_i(char *arg)
 {
@@ -48,10 +92,11 @@ void split_arg_of_i(char *arg)
 		split = strsep(&arg, "?");	
 		i ++;
 	}
-	
+
 	printf("bbs_name:%s\nusername:%s\npasswd:%s\nemail:%s\ndetail:%s\n", 	\
 			bbs_name, username, passwd, email, detail);
 
+	insert(bbs_name, username, passwd, email, detail);
 }
 
 void print_usage()
@@ -76,9 +121,21 @@ void print_usage()
 int main(int argc, char **argv)
 {
 	int ch;
+	int ret;
+
 	if(argc < 2) {
 		print_usage();
 		exit(1);
+	} else {
+		ret = sqlite3_open("apm.db", &db);
+		printf("ret = %d\n", ret);
+		if(ret != SQLITE_OK) {
+			fprintf(stderr, "Can't open database:%s\n", sqlite3_errmsg(db));
+			sqlite3_close(db);
+			exit(1);
+		} else {
+			printf("You have opened a sqlite3 database named apm.db successfully!\n");
+		}
 	}
 
 	while((ch = getopt(argc, argv, "ls:d:i:h")) != -1) {
