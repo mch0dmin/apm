@@ -94,6 +94,8 @@ void select_info_by_bbsname(char *m_bbs_name)
 			}
 		//}
 	}
+	
+	sqlite3_free_table(dbResult);
 
 	//	for(int i = 0; i < ncolumn; i ++) {
 	//		printf("- %s\n", azResult[i]);
@@ -124,6 +126,15 @@ void select_bbs_name()
 		printf("- %s\n", azResult[i+1]);
 	}
 	//sqlite3_free(azResult);
+	sqlite3_free_table(azResult);
+	/*
+	********************************************************************************
+	* 官方文档写明了，不能用sqlite3_free()释放azResult，
+	* 必须使用sqlite3_free_table()来释放；
+	********************************************************************************
+	*/
+
+
 	sqlite3_free(zErrMsg);
 	sqlite3_close(db);
 
