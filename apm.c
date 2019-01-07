@@ -33,6 +33,42 @@ char *zErrMsg = NULL;
 sqlite3_stmt *stmt = NULL;
 const char *zTail = NULL;
 
+
+void modify(char *bbs_name, char *fieldname, char *fieldvalue)
+{
+	printf("----------------modify\n");
+	char sql[100] = {0};
+	sprintf(sql, "update uandp set %s = '%s' where bbs_name = '%s';", fieldname, fieldvalue, bbs_name);
+
+	if(sqlite3_exec(db, sql, NULL, NULL, &zErrMsg) != SQLITE_OK) {
+		printf("\e[31m %d-SQL error: %s \e[0m\n", __LINE__, zErrMsg);
+		sqlite3_free(zErrMsg);
+	}
+	sqlite3_close(db);
+}
+
+void split_arg_of_m(char *arg)
+{
+	char *fieldname = NULL;
+	char *fieldvalue = NULL;
+	char *split = NULL;
+	int i = 0;
+
+	while((split = strsep(&arg, '?')) != NULL) {
+		printf("%d-split = %s\n", __LINE__, split);
+		if(i == 0) {
+			bbs_name = split;
+		} else if(i == 1) {
+			fieldname = split;			
+		} else if(i == 2) {
+			fieldvalue = split;
+		}
+		printf("split = %s\n", split);
+		i ++;
+	}
+	modify(bbs_name, fieldname, fieldvalue);
+}
+
 void delete_one_info_by_bbsname(char *m_bbs_name)
 {
 	int ret;
@@ -239,7 +275,7 @@ void print_usage()
 {
 	printf("\e[31m*************************************** \e[0m\n");
 	printf("Usage:\n");
-	printf("apm -l | -s bbs_name | -d bbs_name | -i bbs_name?username?passwd?email?detail | -h\n");
+	printf("apm -l | -s bbs_name | -d bbs_name | -i bbs_name?username?passwd?email?detail | -m bbs_name?fieldname?fieldvalue | -h\n");
 	printf("----------\n");
 	printf("-l: list all option names.\n");
 	printf("----------\n");
@@ -248,6 +284,8 @@ void print_usage()
 	printf("-d bbs_name: delete by bbs_name.\n");
 	printf("----------\n");
 	printf("-i: insert/add option.\n");
+	printf("----------\n");
+	printf("-m: modify fieldvalue by bbs_name.\n");
 	printf("----------\n");
 	printf("-h: view help information.\n");
 
@@ -274,7 +312,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	while((ch = getopt(argc, argv, "ls:d:i:h")) != -1) {
+	while((ch = getopt(argc, argv, "ls:d:i:m:h")) != -1) {
 		//printf("optind: %d\n", optind);
 
 		switch(ch) {
@@ -296,6 +334,11 @@ int main(int argc, char **argv)
 				//printf("Have option: -i\n\n");
 				//printf("The argument of -i is %s\n\n", optarg);
 				split_arg_of_i(optarg);
+				break;
+			case 'm':
+				//printf("Have option: -i\n\n");
+				//printf("The argument of -i is %s\n\n", optarg);
+				split_arg_of_m(optarg);
 				break;
 			case 'h':
 				//printf("Have option: -h\n\n");
