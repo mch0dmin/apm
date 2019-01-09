@@ -36,13 +36,14 @@ const char *zTail = NULL;
 
 void modify(char *bbs_name, char *fieldname, char *fieldvalue)
 {
-	printf("----------------modify\n");
 	char sql[100] = {0};
 	sprintf(sql, "update uandp set %s = '%s' where bbs_name = '%s';", fieldname, fieldvalue, bbs_name);
 
 	if(sqlite3_exec(db, sql, NULL, NULL, &zErrMsg) != SQLITE_OK) {
 		printf("\e[31m %d-SQL error: %s \e[0m\n", __LINE__, zErrMsg);
 		sqlite3_free(zErrMsg);
+	} else {
+		printf("\e[32m Have modified %s'%s to %s!~\e[0m\n", bbs_name, fieldname, fieldvalue);
 	}
 	sqlite3_close(db);
 }
@@ -54,8 +55,8 @@ void split_arg_of_m(char *arg)
 	char *split = NULL;
 	int i = 0;
 
-	while((split = strsep(&arg, '?')) != NULL) {
-		printf("%d-split = %s\n", __LINE__, split);
+	while((split = strsep(&arg, "?")) != NULL) {
+		//printf("%d-split = %s\n", __LINE__, split);
 		if(i == 0) {
 			bbs_name = split;
 		} else if(i == 1) {
@@ -63,7 +64,7 @@ void split_arg_of_m(char *arg)
 		} else if(i == 2) {
 			fieldvalue = split;
 		}
-		printf("split = %s\n", split);
+		//printf("split = %s\n", split);
 		i ++;
 	}
 	modify(bbs_name, fieldname, fieldvalue);
