@@ -1,26 +1,10 @@
-/*
- * =====================================================================================
- *
- *       Filename:  
- *
- *    Description:  
- *
- *        Version:  1.0
- *        Created:  01/04/2019 05:19:17 PM
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  YOUR NAME (), 
- *   Organization:  
- *
- * =====================================================================================
- */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include "sqlite3.h"
+#include <stdbool.h>
 
 char *bbs_name = NULL;
 char *username = NULL;
@@ -32,8 +16,50 @@ sqlite3 *db = NULL;
 char *zErrMsg = NULL;
 sqlite3_stmt *stmt = NULL;
 const char *zTail = NULL;
+bool fieldname_is_not_exists(char *fieldname)
+{
+	//printf("miao-%s\n", fieldname);	//	用于调试
+	char *all_fieldname[5] = {"bbs_name", "username", "passwd", "email", "detail"};
+	for(int i = 0; i < 5; i ++) {
+		//printf("miaoch2-%s\n", all_fieldname[i]);	//	用于调试
+		if(strcmp(all_fieldname[i], fieldname) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+bool bbsname_if_not_exists(char *fieldname)
+{
+	int ret;
+	int nrow, ncolumn;
+	//char *all_bbsname[100] = {};	//	先写成一个固定的，以后看怎么动态分配 
+	char **all_bbsname = NULL;
+	char *sql = "select bbs_name from uandp;";
+	ret = sqlite3_get_table(db, sql, &all_bbsname, &nrow, &ncolumn, &zErrMsg);
+	if(ret == SQLITE_OK) {
+		//for(int i = 0; i < nrow; i ++) {
+		//	printf("- %s\n", all_bbsname[i+1]);
+		//}
+		//可以输出全部的bbsname
 
+		//while(all_bbsname[i] != NULL) {
+		//printf("nrow = %d, ncolumn = %d\n", nrow, ncolumn);
+		for(int i = 0; i < nrow; i ++) {
+			if(strcmp(all_bbsname[i+1], fieldname) == 0) {
+				//printf("\e[32m %s in all_bbsname!\e[0m\n", fieldname);
+				return true;
+			}
+			//else {
+			//	//printf("\e[31m %s is not in all_bbsname!\e[0m\n", fieldname);
+			//	printf("\e[31m %s does not exist!\e[0m\n", fieldname);
+			//}
+		}
+	}
+	return false;
+}
 
+/* 根据bbs_name修改表中某一字段的值
+ * */
 void modify(char *bbs_name, char *fieldname, char *fieldvalue)
 {
 	char sql[100] = {0};
@@ -67,37 +93,49 @@ void split_arg_of_m(char *arg)
 		//printf("split = %s\n", split);
 		i ++;
 	}
-	modify(bbs_name, fieldname, fieldvalue);
+	/* 判断用户输入的bbsname是否存在，
+	 * 存在再去修改，
+	 * 不存在则不修改
+	 * */
+
+	if(bbsname_if_not_exists(bbs_name)) {
+		if(fieldname_is_not_exists(fieldname)) {
+			modify(bbs_name, fieldname, fieldvalue);
+		} else {
+			printf("\e[31m %s'info does not exist!\e[0m\n", fieldname);
+		}
+	} else {
+		printf("\e[31m %s'info does not exist!\e[0m\n", bbs_name);
+	}
 }
 
 void delete_one_info_by_bbsname(char *m_bbs_name)
 {
 	int ret;
 	char sql[100] = {0};
-	sprintf(sql, "delete from uandp where bbs_name = '%s';", m_bbs_name);
-	//printf("%s: sql = %s\n", __FUNCTION__, sql);
-
-	ret = sqlite3_prepare(db, sql, -1, &stmt, &zTail);
-	if(ret != SQLITE_OK) {
-		printf("\e[31m %s: %s \e[0m\n", __FUNCTION__, sqlite3_errmsg(db));
-		sqlite3_free(stmt);
-		sqlite3_free(zTail);
+	if(bbsname_if_not_exists(m_bbs_name)) {
+		sprintf(sql, "delete from uandp where bbs_name = '%s';", m_bbs_name);
+		//printf("%s: sql = %s\n", __FUNCTION__, sql);
+		ret = sqlite3_prepare(db, sql, -1, &stmt, &zTail);
+		if(ret != SQLITE_OK) {
+			printf("\e[31m %s: %s \e[0m\n", __FUNCTION__, sqlite3_errmsg(db));
+			sqlite3_free(stmt);
+			sqlite3_free(zTail);
+		}
+		ret = sqlite3_step(stmt);
+		if(ret != SQLITE_DONE) {
+			printf("\e[31m %s: %s \e[0m\n", __FUNCTION__, sqlite3_errmsg(db));
+			sqlite3_free(stmt);
+			sqlite3_free(zTail);
+		} else {
+			printf("\e[32m delete %s's info successfully!\e[0m\n", m_bbs_name);
+		}
+		//sqlite3_free(stmt);
+		//sqlite3_free(zTail);
 		sqlite3_close(db);
-		exit(1);
-	}
-	ret = sqlite3_step(stmt);
-	if(ret != SQLITE_DONE) {
-		printf("\e[31m %s: %s \e[0m\n", __FUNCTION__, sqlite3_errmsg(db));
-		sqlite3_free(stmt);
-		sqlite3_free(zTail);
-		sqlite3_close(db);
-		exit(1);
 	} else {
-		printf("\e[32m delete %s's info successfully!\e[0m\n", m_bbs_name);
+		printf("\e[31m %s'info does not exist!\e[0m\n", m_bbs_name);
 	}
-	//sqlite3_free(stmt);
-	//sqlite3_free(zTail);
-	sqlite3_close(db);
 }
 
 void select_info_by_bbsname(char *m_bbs_name)
@@ -106,40 +144,49 @@ void select_info_by_bbsname(char *m_bbs_name)
 	char **dbResult = NULL;
 	char sql[100] = { 0 };
 	//sprintf(sql, "\'%s\'\;", m_bbs_name);
-	sprintf(sql, "select * from uandp where bbs_name = '%s';", m_bbs_name);
-	//printf("sql = %s\n", sql);
-	int nrow, ncolumn;
-	int index;
-	char *zErrMsg = NULL;
 
-	sqlite3_prepare(db, sql, -1, &stmt, &zTail);
-	//printf("%s: %s\n", __FUNCTION__, m_bbs_name);
-	ret = sqlite3_bind_text(stmt, 1, m_bbs_name, -1, SQLITE_STATIC);
-	//printf("%s: ret = %d\n", __FUNCTION__, ret);
+	/* 判断用户输入的bbsname是否存在，
+	 * 如果不存在，则不进行查找，
+	 * 如果存在，则进行查找；
+	 * */
+	if(bbsname_if_not_exists(m_bbs_name)) {
+		sprintf(sql, "select * from uandp where bbs_name = '%s';", m_bbs_name);
+		//printf("sql = %s\n", sql);
+		int nrow, ncolumn;
+		int index;
+		char *zErrMsg = NULL;
 
-	ret = sqlite3_get_table(db, sql, &dbResult, &nrow, &ncolumn, &zErrMsg);
+		sqlite3_prepare(db, sql, -1, &stmt, &zTail);
+		//printf("%s: %s\n", __FUNCTION__, m_bbs_name);
+		ret = sqlite3_bind_text(stmt, 1, m_bbs_name, -1, SQLITE_STATIC);
+		//printf("%s: ret = %d\n", __FUNCTION__, ret);
 
-	//printf("%s: nrow = %d, ncolumn = %d\n", __FUNCTION__, nrow, ncolumn);
-	printf("The info of %s is:\n", m_bbs_name);
-	index = ncolumn;
-	if(ret == SQLITE_OK) {
-		//for(int i = 0; i < nrow; i ++) {
+		ret = sqlite3_get_table(db, sql, &dbResult, &nrow, &ncolumn, &zErrMsg);
+
+		//printf("%s: nrow = %d, ncolumn = %d\n", __FUNCTION__, nrow, ncolumn);
+		printf("The info of %s is:\n", m_bbs_name);
+		index = ncolumn;
+		if(ret == SQLITE_OK) {
+			//for(int i = 0; i < nrow; i ++) {
 			for(int j = 0; j < ncolumn; j ++) {
 				//printf("%s --> %s\n", dbResult[i], dbResult[index]);
 				printf("--> %s\n", dbResult[index]);
 				++index;
 			}
-		//}
-	}
-	
-	sqlite3_free_table(dbResult);
+			//}
+		}
 
-	//	for(int i = 0; i < ncolumn; i ++) {
-	//		printf("- %s\n", azResult[i]);
-	//	}
-	//sqlite3_free(stmt);
-	sqlite3_finalize(stmt);
-	sqlite3_free(zErrMsg);
+		sqlite3_free_table(dbResult);
+
+		//	for(int i = 0; i < ncolumn; i ++) {
+		//		printf("- %s\n", azResult[i]);
+		//	}
+		//sqlite3_free(stmt);
+		sqlite3_finalize(stmt);
+		sqlite3_free(zErrMsg);
+	} else {
+		printf("\e[31m %s'info does not exist!\e[0m\n", m_bbs_name);
+	}
 }
 
 void select_bbs_name()
@@ -165,11 +212,11 @@ void select_bbs_name()
 	//sqlite3_free(azResult);
 	sqlite3_free_table(azResult);
 	/*
-	********************************************************************************
-	* 官方文档写明了，不能用sqlite3_free()释放azResult，
-	* 必须使用sqlite3_free_table()来释放；
-	********************************************************************************
-	*/
+	 ********************************************************************************
+	 * 官方文档写明了，不能用sqlite3_free()释放azResult，
+	 * 必须使用sqlite3_free_table()来释放；
+	 ********************************************************************************
+	 */
 
 
 	sqlite3_free(zErrMsg);
@@ -267,9 +314,16 @@ void split_arg_of_i(char *arg)
 	}
 
 	//printf("bbs_name:%s\nusername:%s\npasswd:%s\nemail:%s\ndetail:%s\n", 	\
-			bbs_name, username, passwd, email, detail);
-
-	insert(bbs_name, username, passwd, email, detail);
+	bbs_name, username, passwd, email, detail);
+	/* 判断用户输入的bbsname是否存在，
+	 * 如果存在了，则不能再次插入，
+	 * 如果不存在，则可以进行插入操作；
+	 * */
+	if(!bbsname_if_not_exists(bbs_name)) {
+		insert(bbs_name, username, passwd, email, detail);
+	} else {
+		printf("\e[31m Error: %s already exists!\e[0m\n", bbs_name);
+	}
 }
 
 void print_usage()
@@ -335,6 +389,7 @@ int main(int argc, char **argv)
 				//printf("Have option: -i\n\n");
 				//printf("The argument of -i is %s\n\n", optarg);
 				split_arg_of_i(optarg);
+				//bbsname_if_not_exists(optarg);	//	用于调用bbsname_if_not_exists()进行测试；
 				break;
 			case 'm':
 				//printf("Have option: -i\n\n");
